@@ -1,0 +1,64 @@
+/**
+ * app/[slug]/page.tsx
+ *
+ * Example CMS-powered page using NextJsonComponent + unstable_cache.
+ *
+ * Data flow:
+ *   1. User requests /my-page
+ *   2. getTemplate('my-page') checks Next.js Data Cache
+ *      → Cache hit:  returns JSON AST immediately (no network call)
+ *      → Cache miss: fetches from CMS_API_URL, stores in cache (60 s TTL)
+ *   3. NextJsonComponent renders the AST as HTML on the server
+ *   4. When the CMS publishes new content, it POSTs to /api/cms-webhook
+ *   5. revalidateTag('njc-template:my-page') clears exactly that entry
+ *   6. Next request re-fetches from CMS and caches again
+ *
+ * Environment variables required:
+ *   CMS_API_URL=https://your-cms.example.com/api   (GET /templates/:id)
+ *   WEBHOOK_SECRET=your-secret-token               (optional in dev)
+ */
+
+import { NextJsonComponent, getTemplate } from '@/lib/next-json-component/server';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+
+// ---------------------------------------------------------------------------
+// Metadata (optional — populate from CMS if your template carries meta fields)
+// ---------------------------------------------------------------------------
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  return {
+    title: slug,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+export default async function CmsPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+
+  let template;
+  try {
+    template = await getTemplate(slug);
+  } catch {
+    // Template not found or CMS unavailable → 404
+    notFound();
+  }
+
+  return (
+    <main>
+      <NextJsonComponent template={template} />
+    </main>
+  );
+}

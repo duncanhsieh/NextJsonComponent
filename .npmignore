@@ -1,0 +1,22 @@
+# Ignore Everything first
+*
+
+# Allow distribution files
+!dist/
+!package.json
+!README.md
+!LICENSE
+
+# Ensure source and docs stay out
+src/
+docs/
+.next/
+tsconfig.json
+tailwind.config.ts
+tsup.config.ts
+postcss.config.mjs
+vitest.config.ts
+.eslintrc.json
+next-env.d.ts
+next.config.ts
+.env*
