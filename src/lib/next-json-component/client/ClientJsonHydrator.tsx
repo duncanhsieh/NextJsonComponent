@@ -22,7 +22,7 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import type { AnalyzedNode, NextJsonComponentOptions, RenderContext } from '../types';
 import { createScopedStore } from '../store/store';
-import { analyzeTree } from '../static-analyzer';
+
 import { renderNode } from '../node-renderer';
 import { ErrorBoundary } from '../errors/ErrorBoundary';
 
@@ -81,8 +81,8 @@ export const ClientJsonHydrator: React.FC<ClientJsonHydratorProps> = React.memo(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Run static analysis (memoized on template identity)
-    const analyzedTemplate = useMemo(() => analyzeTree(template), [template]);
+    // The template was already analyzed statically on the server
+    const analyzedTemplate = template;
 
     // Build render context
     const ctx: RenderContext = useMemo(

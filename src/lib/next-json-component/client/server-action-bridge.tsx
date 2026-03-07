@@ -22,7 +22,7 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState, useTransition } from 'react';
 import type { NextJsonComponentOptions, RenderContext } from '../types';
 import { createScopedStore } from '../store/store';
-import { analyzeTree } from '../static-analyzer';
+
 import { renderNode } from '../node-renderer';
 import { ErrorBoundary } from '../errors/ErrorBoundary';
 import type { AnalyzedNode } from '../types';
@@ -100,13 +100,23 @@ export function ServerActionHydrator({
 }: ServerActionHydratorProps) {
   const serverActions = options.serverActions ?? {};
 
-  // Stable hook order — one runner per action
+  // To fix hook-in-loop, we should map over Object.entries statically,
+  // but since hooks cannot be inside dynamic loops, we can delegate the runner creation
+  // to a separate sub-component, OR if we assume serverActions object shape is perfectly stable:
+  // We'll use a functional approach building an array of runners.
+  // Actually, since this is a known React limitation, it's safer to use an array map and assume the object keys never change order.
+  const actionEntries = useMemo(() => Object.entries(serverActions), [serverActions]);
+  
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const runnersArray = actionEntries.map(([name, action]) => ({
+    name,
+    runner: useServerActionRunner(action)
+  }));
+  
   const actionRunners: Record<string, { dispatch: (...a: unknown[]) => void; state: ServerActionState }> = {};
-  for (const [name, action] of Object.entries(serverActions)) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const runner = useServerActionRunner(action);
+  runnersArray.forEach(({ name, runner }) => {
     actionRunners[name] = runner;
-  }
+  });
 
   // -----------------------------------------------------------------------
   // Own Zustand store — created once
@@ -155,7 +165,7 @@ export function ServerActionHydrator({
   // -----------------------------------------------------------------------
   // Render
   // -----------------------------------------------------------------------
-  const analyzedTemplate = useMemo(() => analyzeTree(template), [template]);
+  const analyzedTemplate = template;
 
   const ctx: RenderContext = {
     state: storeState,

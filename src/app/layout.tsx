@@ -35,9 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <footer className="footer">
           <div className="footer-links">
-            <a href="/demo" className="footer-link">Demo</a>
-            <a href="/#features" className="footer-link">Features</a>
-            <a href="/#how-it-works" className="footer-link">Architecture</a>
+            <Link href="/demo" className="footer-link">Demo</Link>
+            <Link href="/#features" className="footer-link">Features</Link>
+            <Link href="/#how-it-works" className="footer-link">Architecture</Link>
           </div>
           <p>NextJsonComponent · Built with Next.js 16 + React 19 + Zustand</p>
         </footer>

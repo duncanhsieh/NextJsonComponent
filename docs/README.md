@@ -35,7 +35,7 @@ WEBHOOK_SECRET=your-secret-token
 
 ```tsx
 // app/[slug]/page.tsx
-import { NextJsonComponent, getTemplate } from '@/lib/next-json-component/server';
+import { NextJsonComponent, getTemplate } from 'next-json-component/server';
 
 export default async function Page({ params }) {
   const { slug } = await params;

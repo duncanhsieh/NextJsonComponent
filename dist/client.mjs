@@ -1,6 +1,6 @@
-import { createScopedStore, ErrorBoundary } from './chunk-PQEOHR5B.mjs';
-export { ServerActionHydrator, useServerActionState } from './chunk-PQEOHR5B.mjs';
-import { analyzeTree, renderNode } from './chunk-G5XT4IWE.mjs';
+import { createScopedStore, ErrorBoundary } from './chunk-NA7L6NTL.mjs';
+export { ServerActionHydrator, useServerActionState } from './chunk-NA7L6NTL.mjs';
+import { renderNode } from './chunk-3P2SZ7UA.mjs';
 import React, { useMemo, useRef, useEffect } from 'react';
 import { jsx, Fragment } from 'react/jsx-runtime';
 
@@ -26,7 +26,7 @@ var ClientJsonHydrator = React.memo(
         });
       }
     }, []);
-    const analyzedTemplate = useMemo(() => analyzeTree(template), [template]);
+    const analyzedTemplate = template;
     const ctx = useMemo(
       () => ({
         state,

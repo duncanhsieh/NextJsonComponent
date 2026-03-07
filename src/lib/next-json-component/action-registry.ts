@@ -64,6 +64,7 @@ export function createBoundHandler(
         ctx.setState,
         ctx.props,
         ...resolvedArgs,
+        ...eventArgs
       );
     } catch (err) {
       console.error(`[ActionRegistry] Error executing action "${binding.action}":`, err);
@@ -90,7 +91,8 @@ export function createBoundServerActionHandler(
     const resolvedArgs = resolveArgs(binding.args, ctx);
     try {
       // Server actions usually expect controlled arguments, not the raw Event object.
-      await serverAction(...resolvedArgs);
+      // But we append eventArgs just in case the server action supports it.
+      await serverAction(...resolvedArgs, ...eventArgs);
     } catch (err) {
       console.error(`[ActionRegistry] Error executing server action "${actionName}":`, err);
     }

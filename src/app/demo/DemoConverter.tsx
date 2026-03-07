@@ -94,10 +94,14 @@ export function DemoConverter() {
     });
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(output);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(output);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
   };
 
   const inputLabel = mode === 'jsx-to-json' ? 'JSX Input' : 'JSON AST Input';
@@ -160,15 +164,15 @@ export function DemoConverter() {
         <div className="converter-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <label className="converter-label">{outputLabel}</label>
-            {output && (
+            {output ? (
               <button className="converter-copy-btn" onClick={handleCopy}>
                 {copied ? '✓ Copied!' : 'Copy'}
               </button>
-            )}
+            ) : null}
           </div>
           <div className={`converter-output${error ? ' converter-error' : ''}`}>
             {error
-              ? `⚠ ${error}`
+              ? <div style={{ color: 'var(--red)' }}>⚠ {error} <br/><button onClick={handleConvert} style={{ marginTop: 8 }} className="btn-secondary">Retry</button></div>
               : output || <span style={{ color: 'var(--text-muted)' }}>點擊 → 開始轉換</span>}
           </div>
         </div>

@@ -9,7 +9,7 @@ import { safeEval, SafeEvalError } from './safe-evaluator';
 import type { RenderContext, JsonPropValue, ActionBinding } from './types';
 
 // Matches one or more {{ expr }} placeholders.
-const EXPR_PATTERN = /\{\{\s*([\s\S]+?)\s*\}\}/g;
+const EXPR_PATTERN = /\{\{\s*([\s\S]*?)\s*\}\}/g;
 
 /**
  * Check whether a string value contains at least one {{ }} template expression.

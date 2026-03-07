@@ -42,65 +42,6 @@ function createScopedStore(initialState = {}) {
   }));
 }
 
-// src/lib/next-json-component/static-analyzer.ts
-var EXPR_RE = /\{\{[\s\S]+?\}\}/;
-function hasExpression(value) {
-  return EXPR_RE.test(value);
-}
-function isPropDynamic(value) {
-  if (typeof value === "string") {
-    return hasExpression(value);
-  }
-  if (typeof value === "object" && value !== null) {
-    if ("action" in value && typeof value.action === "string") {
-      return true;
-    }
-  }
-  return false;
-}
-function hasAnyDynamicProp(props) {
-  if (!props) return false;
-  return Object.values(props).some(isPropDynamic);
-}
-function isChildDynamic(child) {
-  if (typeof child === "string") {
-    return hasExpression(child);
-  }
-  return false;
-}
-function analyzeNode(node) {
-  var _a, _b, _c, _d;
-  if (node.$if !== void 0 || node.$each !== void 0) {
-    const analyzedChildren2 = (_b = (_a = node.children) == null ? void 0 : _a.map(analyzeChild)) != null ? _b : [];
-    return __spreadProps(__spreadValues({}, node), {
-      children: analyzedChildren2,
-      isStatic: false
-    });
-  }
-  const dynamicProps = hasAnyDynamicProp(node.props);
-  const analyzedChildren = (_d = (_c = node.children) == null ? void 0 : _c.map(analyzeChild)) != null ? _d : [];
-  const dynamicTextChild = analyzedChildren.some(
-    (child) => typeof child === "string" && isChildDynamic(child)
-  );
-  const dynamicSubNode = analyzedChildren.some(
-    (child) => typeof child !== "string" && !child.isStatic
-  );
-  const isStatic = !dynamicProps && !dynamicTextChild && !dynamicSubNode;
-  return __spreadProps(__spreadValues({}, node), {
-    children: analyzedChildren,
-    isStatic
-  });
-}
-function analyzeChild(child) {
-  if (typeof child === "string") {
-    return child;
-  }
-  return analyzeNode(child);
-}
-function analyzeTree(root) {
-  return analyzeNode(root);
-}
-
 // src/lib/next-json-component/safe-evaluator.ts
 var BLOCKED_IDENTIFIERS = /* @__PURE__ */ new Set([
   "window",
@@ -281,9 +222,9 @@ function tokenize(expr) {
       i++;
       continue;
     }
-    if (/[a-zA-Z_$]/.test(ch)) {
+    if (/[a-zA-Z_$\u0080-\uFFFF]/.test(ch)) {
       let ident = "";
-      while (i < expr.length && /[a-zA-Z0-9_$]/.test(expr[i])) {
+      while (i < expr.length && /[a-zA-Z0-9_$\u0080-\uFFFF]/.test(expr[i])) {
         ident += expr[i++];
       }
       tokens.push({ type: "IDENT", value: ident });
@@ -505,14 +446,18 @@ var Parser = class _Parser {
   }
 };
 function safeEval(expression, context) {
-  const tokens = tokenize(expression.trim());
+  const trimmed = expression.trim();
+  if (!trimmed) {
+    return void 0;
+  }
+  const tokens = tokenize(trimmed);
   const parser = new Parser(tokens);
   const result = parser.parseExpression(context);
   return result;
 }
 
 // src/lib/next-json-component/expression-resolver.ts
-var EXPR_PATTERN = /\{\{\s*([\s\S]+?)\s*\}\}/g;
+var EXPR_PATTERN = /\{\{\s*([\s\S]*?)\s*\}\}/g;
 function buildEvalContext(ctx) {
   var _a;
   return __spreadValues({
@@ -586,7 +531,8 @@ function createBoundHandler(binding, registry, ctx) {
         ctx.state,
         ctx.setState,
         ctx.props,
-        ...resolvedArgs
+        ...resolvedArgs,
+        ...eventArgs
       );
     } catch (err) {
       console.error(`[ActionRegistry] Error executing action "${binding.action}":`, err);
@@ -601,7 +547,7 @@ function createBoundServerActionHandler(actionName, serverAction, binding, ctx) 
     }
     const resolvedArgs = resolveArgs(binding.args, ctx);
     try {
-      await serverAction(...resolvedArgs);
+      await serverAction(...resolvedArgs, ...eventArgs);
     } catch (err) {
       console.error(`[ActionRegistry] Error executing server action "${actionName}":`, err);
     }
@@ -800,7 +746,7 @@ var ClientJsonHydrator = React__default.default.memo(
         });
       }
     }, []);
-    const analyzedTemplate = React.useMemo(() => analyzeTree(template), [template]);
+    const analyzedTemplate = template;
     const ctx = React.useMemo(
       () => ({
         state,
@@ -847,11 +793,15 @@ function ServerActionHydrator({
 }) {
   var _a, _b;
   const serverActions = (_a = options.serverActions) != null ? _a : {};
+  const actionEntries = React.useMemo(() => Object.entries(serverActions), [serverActions]);
+  const runnersArray = actionEntries.map(([name, action]) => ({
+    name,
+    runner: useServerActionRunner(action)
+  }));
   const actionRunners = {};
-  for (const [name, action] of Object.entries(serverActions)) {
-    const runner = useServerActionRunner(action);
+  runnersArray.forEach(({ name, runner }) => {
     actionRunners[name] = runner;
-  }
+  });
   const initialActionsStatus = Object.fromEntries(
     Object.entries(actionRunners).map(([name, { state }]) => [name, state])
   );
@@ -877,7 +827,7 @@ function ServerActionHydrator({
       (_s, _ss, _p, ...args) => dispatch(...args)
     ])
   ));
-  const analyzedTemplate = React.useMemo(() => analyzeTree(template), [template]);
+  const analyzedTemplate = template;
   const ctx = {
     state: storeState,
     setState: storeState.setState,

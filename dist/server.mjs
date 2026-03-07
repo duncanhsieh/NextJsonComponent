@@ -1,7 +1,8 @@
-import { ServerActionHydrator } from './chunk-PQEOHR5B.mjs';
-import { __objRest, analyzeTree } from './chunk-G5XT4IWE.mjs';
+import { analyzeTree } from './chunk-YKATBEDX.mjs';
+import { ServerActionHydrator } from './chunk-NA7L6NTL.mjs';
+import { __objRest } from './chunk-3P2SZ7UA.mjs';
 import { jsx } from 'react/jsx-runtime';
-import { unstable_cache } from 'next/cache';
+import { cacheTag, cacheLife } from 'next/cache';
 
 async function NextJsonComponent(_a) {
   var _b = _a, {
@@ -40,25 +41,21 @@ function createTemplateFetcher(fetcher, options = {}) {
   var _a, _b, _c;
   const revalidate = (_a = options.revalidate) != null ? _a : 60;
   const getTags = (_b = options.getTags) != null ? _b : ((id) => [templateTag(id), ALL_TEMPLATES_TAG]);
-  const getCacheKey = (_c = options.getCacheKey) != null ? _c : ((id) => ["njc-template", id]);
+  (_c = options.getCacheKey) != null ? _c : ((id) => ["njc-template", id]);
   return async (templateId, context) => {
-    const cachedFn = unstable_cache(
-      async () => {
-        const ast = await fetcher(templateId, context);
-        if (!ast || typeof ast !== "object" || !("type" in ast)) {
-          throw new Error(
-            `[NextJsonComponent] template-fetcher: The fetcher returned an invalid JsonASTNode for template "${templateId}". Missing "type" field.`
-          );
-        }
-        return ast;
-      },
-      getCacheKey(templateId),
-      {
-        revalidate,
-        tags: getTags(templateId)
-      }
-    );
-    return cachedFn();
+    "use cache";
+    const tags = getTags(templateId);
+    cacheTag(...tags);
+    if (revalidate !== false && typeof revalidate === "number") {
+      cacheLife({ revalidate });
+    }
+    const ast = await fetcher(templateId, context);
+    if (!ast || typeof ast !== "object" || !("type" in ast)) {
+      throw new Error(
+        `[NextJsonComponent] template-fetcher: The fetcher returned an invalid JsonASTNode for template "${templateId}". Missing "type" field.`
+      );
+    }
+    return ast;
   };
 }
 var getTemplate = createTemplateFetcher(async (templateId) => {

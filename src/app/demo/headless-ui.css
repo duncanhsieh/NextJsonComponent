@@ -1,0 +1,322 @@
+/* headless-ui.css */
+.hui-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.hui-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 20px;
+}
+.hui-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+/* Base button */
+.hui-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+.hui-btn:hover {
+  opacity: 0.9;
+}
+
+/* Menu */
+.hui-menu-relative {
+  position: relative;
+  display: inline-block;
+  text-align: left;
+}
+.hui-menu-items {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 8px;
+  width: 224px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 4px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+.hui-menu-item {
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text);
+  font-family: inherit;
+}
+.hui-menu-item[data-focus],
+.hui-menu-item:hover {
+  background: var(--accent);
+  color: white;
+}
+
+/* Disclosure */
+.hui-disclosure-btn {
+  width: 100%;
+  text-align: left;
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--accent);
+  border: none;
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+}
+.hui-disclosure-btn[data-open] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.hui-disclosure-panel {
+  padding: 16px;
+  background: rgba(124, 58, 237, 0.02);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  border-top: none;
+  border-bottom-left-radius: var(--r-sm);
+  border-bottom-right-radius: var(--r-sm);
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+/* Dialog */
+.hui-dialog {
+  position: relative;
+  z-index: 50;
+}
+.hui-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+}
+.hui-dialog-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.hui-dialog-panel {
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+.hui-dialog-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+.hui-dialog-desc {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 24px;
+}
+
+/* Switch */
+.hui-switch-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hui-switch {
+  position: relative;
+  display: inline-flex;
+  height: 28px;
+  width: 52px;
+  align-items: center;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  background: var(--border);
+  transition: background-color 0.2s;
+}
+.hui-switch[data-checked] {
+  background: var(--accent);
+}
+.hui-switch-thumb {
+  display: inline-block;
+  height: 20px;
+  width: 20px;
+  transform: translateX(4px);
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.hui-switch[data-checked] .hui-switch-thumb {
+  transform: translateX(28px);
+}
+.hui-switch-label {
+  font-family: inherit;
+  color: var(--text);
+}
+
+/* Popover */
+.hui-popover {
+  position: relative;
+  display: inline-block;
+}
+.hui-popover-panel {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 8px;
+  width: 250px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  z-index: 10;
+}
+
+/* Listbox & Combobox shared */
+.hui-select-wrap {
+  position: relative;
+  width: 240px;
+}
+.hui-select-btn {
+  width: 100%;
+  text-align: left;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.hui-select-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+}
+.hui-select-input:focus {
+  border-color: var(--accent);
+}
+.hui-select-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 20;
+  padding: 4px;
+}
+.hui-select-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--text);
+}
+.hui-select-option[data-focus],
+.hui-select-option:hover {
+  background: var(--bg-hover);
+}
+.hui-select-option[data-selected] {
+  color: var(--accent);
+  font-weight: 600;
+  background: rgba(124, 58, 237, 0.05);
+}
+
+/* Radio Group */
+.hui-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hui-radio-option {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hui-radio-option[data-checked] {
+  background: rgba(124, 58, 237, 0.05);
+  border-color: var(--accent);
+}
+.hui-radio-option[data-focus] {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.hui-radio-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hui-radio-option[data-checked] .hui-radio-circle {
+  border-color: var(--accent);
+}
+.hui-radio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s;
+}
+.hui-radio-option[data-checked] .hui-radio-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+.hui-radio-label {
+  font-weight: 500;
+  color: var(--text);
+}

@@ -205,10 +205,10 @@ function tokenize(expr: string): Token[] {
       continue;
     }
 
-    // Identifier
-    if (/[a-zA-Z_$]/.test(ch)) {
+    // Identifier (allowing unicode)
+    if (/[a-zA-Z_$\u0080-\uFFFF]/.test(ch)) {
       let ident = '';
-      while (i < expr.length && /[a-zA-Z0-9_$]/.test(expr[i])) {
+      while (i < expr.length && /[a-zA-Z0-9_$\u0080-\uFFFF]/.test(expr[i])) {
         ident += expr[i++];
       }
       tokens.push({ type: 'IDENT', value: ident });
@@ -485,7 +485,11 @@ class Parser {
  * @throws SafeEvalError if the expression uses blocked identifiers or invalid syntax.
  */
 export function safeEval(expression: string, context: Record<string, unknown>): unknown {
-  const tokens = tokenize(expression.trim());
+  const trimmed = expression.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const tokens = tokenize(trimmed);
   const parser = new Parser(tokens);
   const result = parser.parseExpression(context);
   return result;

@@ -3,38 +3,7 @@
  */
 import Link from 'next/link';
 
-// ---------------------------------------------------------------------------
-// Code showcase content
-// ---------------------------------------------------------------------------
 
-const JSON_SNIPPET = `{
-  "type": "div",
-  "props": { "className": "card" },
-  "children": [
-    {
-      "type": "h2",
-      "children": ["Hello, {{ state.name }}!"]
-    },
-    {
-      "type": "button",
-      "props": {
-        "onClick": {
-          "action": "greet"
-        }
-      },
-      "children": ["Say Hi 👋"]
-    }
-  ]
-}`;
-
-const JSX_SNIPPET = `<div className="card">
-  <h2>Hello, {state.name}!</h2>
-  <button
-    onClick={() => greet()}
-  >
-    Say Hi 👋
-  </button>
-</div>`;
 
 // ---------------------------------------------------------------------------
 // Features

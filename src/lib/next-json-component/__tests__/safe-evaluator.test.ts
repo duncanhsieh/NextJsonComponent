@@ -172,3 +172,61 @@ describe('safeEval — grouping', () => {
     expect(safeEval('(state.count + 2) * 3', ctx)).toBe(21);
   });
 });
+
+describe('safeEval — Extreme Edge Cases', () => {
+  it('handles deep nested accesses without crashing', () => {
+    const deepCtx = { state: { a: { b: { c: { d: { e: { f: { g: 100 } } } } } } } };
+    expect(safeEval('state.a.b.c.d.e.f.g', deepCtx)).toBe(100);
+  });
+
+  it('safely evaluates non-existent access yielding undefined', () => {
+    expect(safeEval('state.nonExistent.deep.property', ctx)).toBeUndefined();
+  });
+
+  it('handles very long expressions correctly', () => {
+    const longString = '1 '.repeat(1000) + '+ 1';
+    // '1 1 1 ... + 1' -> basically evaluator trims and handles tokens.
+    // Actually our simple evaluator might complain about multiple literals '1 1 1' without operators.
+    // Let's do '1 + 1 + 1'
+    const longAddition = Array(1000).fill('1').join(' + ');
+    expect(safeEval(longAddition, ctx)).toBe(1000);
+  });
+
+  it('handles empty string expression yielding undefined', () => {
+    expect(safeEval('', ctx)).toBeUndefined();
+  });
+
+  it('prevents prototype pollution access explicitly', () => {
+    expect(() => safeEval("({}).constructor.constructor('return process')()", ctx)).toThrow(SafeEvalError);
+    expect(() => safeEval("state['__proto__']['polluted']", ctx)).toThrow(SafeEvalError);
+  });
+
+  it('blocks dangerous injection keywords inside strings but allows string evaluation', () => {
+    // Strings should just be evaluated as strings, not executed!
+    expect(safeEval("\"'; process.exit(); //\"", ctx)).toBe("'; process.exit(); //");
+  });
+
+  it('evaluates unicode identifiers gracefully', () => {
+    const localeCtx = { state: { 名前: 'Duncan', 'テスト': 42 } };
+    expect(safeEval('state.名前', localeCtx)).toBe('Duncan');
+    expect(safeEval("state['テスト']", localeCtx)).toBe(42);
+  });
+
+  it('handles javascript number extremes', () => {
+    // Our evaluator doesn't have Infinity keyword directly built-in as a literal in tokenizer,
+    // but we can pass it via context.
+    const numCtx = { state: { inf: Infinity, negInf: -Infinity, max: Number.MAX_SAFE_INTEGER, n: NaN } };
+    expect(safeEval('state.inf > state.max', numCtx)).toBe(true);
+    expect(safeEval('state.negInf < 0', numCtx)).toBe(true);
+    // Note: NaN === NaN in JS is false
+    expect(safeEval('state.n === state.n', numCtx)).toBe(false);
+  });
+
+  it('evaluates template literals with extremes', () => {
+    expect(safeEval('``', ctx)).toBe(''); // empty
+    expect(safeEval('`Hello ${state.user}`', ctx)).toBe('Hello Alice');
+    // Nested `${}` not supported well by simple regex, but simple cases should work.
+    expect(safeEval('`Count: ${state.count + 5}`', ctx)).toBe('Count: 10');
+  });
+});
+

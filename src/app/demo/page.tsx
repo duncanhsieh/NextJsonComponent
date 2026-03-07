@@ -6,8 +6,12 @@ import { DemoTabs } from './DemoTabs';
 import { DemoCounter } from './DemoCounter';
 import { DemoTodoList } from './DemoTodoList';
 import { DemoConverter } from './DemoConverter';
+import { DemoHeadlessUI } from './DemoHeadlessUI';
 import { NextJsonComponent } from '@/lib/next-json-component/server';
+import { analyzeTree } from '@/lib/next-json-component';
 import { submitDemoAction } from './actions';
+import { counterTemplate, todoTemplate, headlessUITemplate } from './templates';
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -111,6 +115,11 @@ const COUNTER_AST_PREVIEW = JSON.stringify(
 // ---------------------------------------------------------------------------
 
 export default function DemoPage() {
+  // Pre-analyze templates on the server
+  const analyzedCounter = analyzeTree(counterTemplate);
+  const analyzedTodo = analyzeTree(todoTemplate);
+  const analyzedHeadlessUI = analyzeTree(headlessUITemplate);
+
   return (
     <main>
       <div className="container section">
@@ -130,7 +139,7 @@ export default function DemoPage() {
               label: '計數器',
               content: (
                 <div>
-                  <DemoCounter />
+                  <DemoCounter template={analyzedCounter} />
                   <div className="divider" />
                   <div>
                     <div className="section-label" style={{ marginBottom: 12 }}>對應的 JSON AST 片段</div>
@@ -158,7 +167,7 @@ export default function DemoPage() {
               id: 'todo',
               icon: '✅',
               label: '待辦清單',
-              content: <DemoTodoList />,
+              content: <DemoTodoList template={analyzedTodo} />,
             },
             {
               id: 'rsc',
@@ -166,12 +175,14 @@ export default function DemoPage() {
               label: 'RSC 渲染',
               content: (
                 <div>
-                  <NextJsonComponent
-                    template={RSC_TEMPLATE}
-                    options={{
-                      serverActions: { submit: submitDemoAction },
-                    }}
-                  />
+                  <Suspense fallback={<div style={{ padding: 20 }}>載入中...</div>}>
+                    <NextJsonComponent
+                      template={RSC_TEMPLATE}
+                      options={{
+                        serverActions: { submit: submitDemoAction },
+                      }}
+                    />
+                  </Suspense>
                   <div className="info-box" style={{ marginTop: 32 }}>
                     <strong>Server-Side 優勢：</strong>{' '}
                     此標籤內容透過 <code>ServerJsonComponent</code> 預分析，首屏 HTML 在伺服器生成。
@@ -187,6 +198,12 @@ export default function DemoPage() {
               icon: '🔄',
               label: 'JSX ↔ JSON 轉換器',
               content: <DemoConverter />,
+            },
+            {
+              id: 'headlessui',
+              icon: '🧩',
+              label: 'Headless UI',
+              content: <DemoHeadlessUI template={analyzedHeadlessUI} />,
             },
           ]}
         />

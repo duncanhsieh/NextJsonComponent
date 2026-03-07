@@ -1,4 +1,4 @@
-import { __spreadProps, __spreadValues, analyzeTree, renderNode } from './chunk-G5XT4IWE.mjs';
+import { __spreadProps, __spreadValues, renderNode } from './chunk-3P2SZ7UA.mjs';
 import React, { useMemo, useRef, useEffect, useTransition, useState, useCallback } from 'react';
 import { create } from 'zustand';
 import { jsx, jsxs } from 'react/jsx-runtime';
@@ -85,11 +85,15 @@ function ServerActionHydrator({
 }) {
   var _a, _b;
   const serverActions = (_a = options.serverActions) != null ? _a : {};
+  const actionEntries = useMemo(() => Object.entries(serverActions), [serverActions]);
+  const runnersArray = actionEntries.map(([name, action]) => ({
+    name,
+    runner: useServerActionRunner(action)
+  }));
   const actionRunners = {};
-  for (const [name, action] of Object.entries(serverActions)) {
-    const runner = useServerActionRunner(action);
+  runnersArray.forEach(({ name, runner }) => {
     actionRunners[name] = runner;
-  }
+  });
   const initialActionsStatus = Object.fromEntries(
     Object.entries(actionRunners).map(([name, { state }]) => [name, state])
   );
@@ -115,7 +119,7 @@ function ServerActionHydrator({
       (_s, _ss, _p, ...args) => dispatch(...args)
     ])
   ));
-  const analyzedTemplate = useMemo(() => analyzeTree(template), [template]);
+  const analyzedTemplate = template;
   const ctx = {
     state: storeState,
     setState: storeState.setState,
@@ -132,5 +136,5 @@ function ServerActionHydrator({
 }
 
 export { ErrorBoundary, ServerActionHydrator, createScopedStore, useServerActionState };
-//# sourceMappingURL=chunk-PQEOHR5B.mjs.map
-//# sourceMappingURL=chunk-PQEOHR5B.mjs.map
+//# sourceMappingURL=chunk-NA7L6NTL.mjs.map
+//# sourceMappingURL=chunk-NA7L6NTL.mjs.map

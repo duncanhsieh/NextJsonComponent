@@ -28760,9 +28760,9 @@ function tokenize(expr) {
       i++;
       continue;
     }
-    if (/[a-zA-Z_$]/.test(ch)) {
+    if (/[a-zA-Z_$\u0080-\uFFFF]/.test(ch)) {
       let ident = "";
-      while (i < expr.length && /[a-zA-Z0-9_$]/.test(expr[i])) {
+      while (i < expr.length && /[a-zA-Z0-9_$\u0080-\uFFFF]/.test(expr[i])) {
         ident += expr[i++];
       }
       tokens.push({ type: "IDENT", value: ident });
@@ -28984,14 +28984,18 @@ var Parser = class _Parser {
   }
 };
 function safeEval(expression, context) {
-  const tokens = tokenize(expression.trim());
+  const trimmed = expression.trim();
+  if (!trimmed) {
+    return void 0;
+  }
+  const tokens = tokenize(trimmed);
   const parser2 = new Parser(tokens);
   const result = parser2.parseExpression(context);
   return result;
 }
 
 // src/lib/next-json-component/expression-resolver.ts
-var EXPR_PATTERN = /\{\{\s*([\s\S]+?)\s*\}\}/g;
+var EXPR_PATTERN = /\{\{\s*([\s\S]*?)\s*\}\}/g;
 function isExpression(value) {
   EXPR_PATTERN.lastIndex = 0;
   return EXPR_PATTERN.test(value);
@@ -29214,7 +29218,8 @@ function createBoundHandler(binding, registry, ctx) {
         ctx.state,
         ctx.setState,
         ctx.props,
-        ...resolvedArgs
+        ...resolvedArgs,
+        ...eventArgs
       );
     } catch (err) {
       console.error(`[ActionRegistry] Error executing action "${binding.action}":`, err);
@@ -29229,7 +29234,7 @@ function createBoundServerActionHandler(actionName, serverAction, binding, ctx) 
     }
     const resolvedArgs = resolveArgs(binding.args, ctx);
     try {
-      await serverAction(...resolvedArgs);
+      await serverAction(...resolvedArgs, ...eventArgs);
     } catch (err) {
       console.error(`[ActionRegistry] Error executing server action "${actionName}":`, err);
     }

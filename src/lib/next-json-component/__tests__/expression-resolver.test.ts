@@ -117,3 +117,29 @@ describe('isActionBinding', () => {
     expect(isActionBinding(42)).toBe(false);
   });
 });
+
+describe('resolveExpression — Extreme Edge Cases', () => {
+  it('handles multiple adjacent expressions', () => {
+    const ctx = makeCtx({ state: { a: '1', b: '2', c: '3' } });
+    expect(resolveExpression('{{ state.a }}{{ state.b }}{{ state.c }}', ctx)).toBe('123');
+  });
+
+  it('handles expressions containing newlines', () => {
+    expect(resolveExpression('{{\n  state.name\n}}', makeCtx())).toBe('Bob');
+  });
+
+  it('handles empty expressions safely', () => {
+    expect(resolveExpression('{{ }}', makeCtx())).toBeUndefined();
+    expect(resolveExpression('{{}}', makeCtx())).toBeUndefined();
+  });
+
+  it('handles massive state objects', () => {
+    const hugeState: Record<string, string> = {};
+    for (let i = 0; i < 1000; i++) {
+        hugeState[`prop${i}`] = `value${i}`;
+    }
+    const ctx = makeCtx({ state: hugeState });
+    expect(resolveExpression('{{ state.prop999 }}', ctx)).toBe('value999');
+  });
+});
+
