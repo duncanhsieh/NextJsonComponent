@@ -1,5 +1,5 @@
 import React from 'react';
-import { a as JsonASTNode, N as NextJsonComponentOptions } from './types-B1lk251m.js';
+import { J as JsonASTNode, N as NextJsonComponentOptions } from './types-C1ZzHgkh.js';
 
 /**
  * ServerJsonComponent.tsx

@@ -61,12 +61,13 @@ describe('node-renderer — Extreme Edge Cases: Node Structure', () => {
   it('handles mixed string and node children', () => {
     const node: AnalyzedNode = { type: 'p', children: ['Start ', { type: 'strong', children: ['Bold'] }, ' End'] };
     const element = renderNode(node, defaultCtx) as React.ReactElement;
+    const props = element.props as any;
     
     // Check React elements
-    expect(Array.isArray(element.props.children)).toBe(true);
-    expect(element.props.children[0]).toBe('Start ');
-    expect(element.props.children[1].type).toBe('strong');
-    expect(element.props.children[2]).toBe(' End');
+    expect(Array.isArray(props.children)).toBe(true);
+    expect(props.children[0]).toBe('Start ');
+    expect(props.children[1].type).toBe('strong');
+    expect(props.children[2]).toBe(' End');
   });
 });
 
@@ -158,7 +159,7 @@ describe('node-renderer — Props and Components', () => {
   it('handles nested style objects in props', () => {
     const node: AnalyzedNode = { type: 'div', props: { style: { color: 'red', margin: 10 } } };
     const element = renderNode(node, defaultCtx) as React.ReactElement;
-    expect(element.props.style).toEqual({ color: 'red', margin: 10 });
+    expect((element.props as any).style).toEqual({ color: 'red', margin: 10 });
   });
 
   it('handles unresolved action bindings gracefully without crashing render', () => {
@@ -168,8 +169,51 @@ describe('node-renderer — Props and Components', () => {
     const node: AnalyzedNode = { type: 'button', props: { onClick: { action: 'missing' } } };
     
     const element = renderNode(node, defaultCtx) as React.ReactElement;
-    expect(element.props.onClick).toBeUndefined();
+    expect((element.props as any).onClick).toBeUndefined();
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
   });
 });
+
+describe('node-renderer — $slot special node', () => {
+  it('returns ctx.props.children when present', () => {
+    const childElement = React.createElement('span', { 'data-testid': 'child' }, 'hello');
+    const ctx: RenderContext = {
+      ...defaultCtx,
+      props: { children: childElement },
+    };
+    const node: AnalyzedNode = { type: '$slot' };
+    const result = renderNode(node, ctx);
+    expect(result).toBe(childElement);
+  });
+
+  it('returns null when ctx.props.children is not provided', () => {
+    const ctx: RenderContext = { ...defaultCtx, props: {} };
+    const node: AnalyzedNode = { type: '$slot' };
+    expect(renderNode(node, ctx)).toBeNull();
+  });
+
+  it('does NOT treat $slot as an HTML tag', () => {
+    const node: AnalyzedNode = { type: '$slot' };
+    const result = renderNode(node, defaultCtx);
+    // Should be null (no children), NOT a React element with type '$slot'
+    expect(result).toBeNull();
+  });
+
+  it('$slot nested inside another node outputs the children there', () => {
+    const childElement = React.createElement('em', null, 'slotted');
+    const ctx: RenderContext = {
+      ...defaultCtx,
+      props: { children: childElement },
+    };
+    // Wrap: div > $slot
+    const wrapper: AnalyzedNode = {
+      type: 'div',
+      props: { 'data-testid': 'wrapper' },
+      children: [{ type: '$slot' }],
+    };
+    const { container } = render(renderNode(wrapper, ctx) as React.ReactElement);
+    expect(container.querySelector('em')?.textContent).toBe('slotted');
+  });
+});
+

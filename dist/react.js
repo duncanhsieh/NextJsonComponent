@@ -4,7 +4,6 @@ var React = require('react');
 var zustand = require('zustand');
 var hash = require('object-hash');
 var jsxRuntime = require('react/jsx-runtime');
-var cache = require('next/cache');
 
 function _interopDefault (e) { return e && e.__esModule ? e : { default: e }; }
 
@@ -30,18 +29,6 @@ var __spreadValues = (a, b) => {
   return a;
 };
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-var __objRest = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
 function createScopedStore(initialState = {}) {
   return zustand.create((set, get) => __spreadProps(__spreadValues({}, initialState), {
     setState: ((update) => {
@@ -53,6 +40,68 @@ function createScopedStore(initialState = {}) {
     // Expose getState for use in action handlers
     getState: () => get()
   }));
+}
+
+// src/lib/next-json-component/static-analyzer.ts
+var EXPR_RE = /\{\{[\s\S]+?\}\}/;
+function hasExpression(value) {
+  return EXPR_RE.test(value);
+}
+function isPropDynamic(value) {
+  if (typeof value === "string") {
+    return hasExpression(value);
+  }
+  if (typeof value === "object" && value !== null) {
+    if ("action" in value && typeof value.action === "string") {
+      return true;
+    }
+  }
+  return false;
+}
+function hasAnyDynamicProp(props) {
+  if (!props) return false;
+  return Object.values(props).some(isPropDynamic);
+}
+function isChildDynamic(child) {
+  if (typeof child === "string") {
+    return hasExpression(child);
+  }
+  return false;
+}
+function analyzeNode(node) {
+  var _a, _b, _c, _d;
+  if (node.$if !== void 0 || node.$each !== void 0) {
+    const analyzedChildren2 = (_b = (_a = node.children) == null ? void 0 : _a.map(analyzeChild)) != null ? _b : [];
+    return __spreadProps(__spreadValues({}, node), {
+      children: analyzedChildren2,
+      isStatic: false
+    });
+  }
+  const dynamicProps = hasAnyDynamicProp(node.props);
+  const analyzedChildren = (_d = (_c = node.children) == null ? void 0 : _c.map(analyzeChild)) != null ? _d : [];
+  const dynamicTextChild = analyzedChildren.some(
+    (child) => typeof child === "string" && isChildDynamic(child)
+  );
+  const dynamicSubNode = analyzedChildren.some(
+    (child) => typeof child !== "string" && !child.isStatic
+  );
+  const isStatic = !dynamicProps && !dynamicTextChild && !dynamicSubNode;
+  return __spreadProps(__spreadValues({}, node), {
+    children: analyzedChildren,
+    isStatic
+  });
+}
+function analyzeChild(child) {
+  if (typeof child === "string") {
+    return child;
+  }
+  return analyzeNode(child);
+}
+function analyzeTree(root) {
+  return analyzeNode(root);
+}
+function isStaticNode(node) {
+  return node.isStatic === true;
 }
 
 // src/lib/next-json-component/safe-evaluator.ts
@@ -471,6 +520,10 @@ function safeEval(expression, context) {
 
 // src/lib/next-json-component/expression-resolver.ts
 var EXPR_PATTERN = /\{\{\s*([\s\S]*?)\s*\}\}/g;
+function isExpression(value) {
+  EXPR_PATTERN.lastIndex = 0;
+  return EXPR_PATTERN.test(value);
+}
 function buildEvalContext(ctx) {
   var _a;
   return __spreadValues({
@@ -565,6 +618,13 @@ function createBoundServerActionHandler(actionName, serverAction, binding, ctx) 
       console.error(`[ActionRegistry] Error executing server action "${actionName}":`, err);
     }
   };
+}
+function validateRegistry(registry) {
+  for (const [name, fn] of Object.entries(registry)) {
+    if (typeof fn !== "function") {
+      throw new TypeError(`[ActionRegistry] Action "${name}" must be a function.`);
+    }
+  }
 }
 function resolveHandler(binding, ctx) {
   const { actionRegistry, serverActions } = ctx.options;
@@ -737,221 +797,50 @@ var ErrorBoundary = class extends React__default.default.Component {
     return this.props.children;
   }
 };
-function useServerActionRunner(action) {
-  const [isPending, startTransition] = React.useTransition();
-  const [result, setResult] = React.useState(null);
-  const [error, setError] = React.useState(null);
-  const dispatch = React.useCallback(
-    (...args) => {
-      startTransition(async () => {
-        try {
-          const res = await action(...args);
-          setResult(res);
-          setError(null);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : String(err));
-        }
-      });
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [action]
-  );
-  return { dispatch, state: { isPending, result, error } };
+function StaticSubtree({ content }) {
+  return /* @__PURE__ */ jsxRuntime.jsx(jsxRuntime.Fragment, { children: content });
 }
-function ServerActionHydrator({
-  template,
-  options,
-  componentProps = {}
-}) {
-  var _a, _b;
-  const serverActions = (_a = options.serverActions) != null ? _a : {};
-  const actionEntries = React.useMemo(() => Object.entries(serverActions), [serverActions]);
-  const runnersArray = actionEntries.map(([name, action]) => ({
-    name,
-    runner: useServerActionRunner(action)
-  }));
-  const actionRunners = {};
-  runnersArray.forEach(({ name, runner }) => {
-    actionRunners[name] = runner;
-  });
-  const initialActionsStatus = Object.fromEntries(
-    Object.entries(actionRunners).map(([name, { state }]) => [name, state])
-  );
-  const useStore = React.useMemo(() => {
-    var _a2;
-    return createScopedStore(__spreadProps(__spreadValues({}, (_a2 = options.initialState) != null ? _a2 : {}), {
-      _actions: initialActionsStatus
-    }));
-  }, []);
-  const storeState = useStore();
-  const actionsStatus = Object.fromEntries(
-    Object.entries(actionRunners).map(([name, { state }]) => [name, state])
-  );
-  const actionsJson = JSON.stringify(actionsStatus);
-  const actionsStatusRef = React.useRef(actionsStatus);
-  actionsStatusRef.current = actionsStatus;
-  React.useEffect(() => {
-    useStore.getState().setState({ _actions: actionsStatusRef.current });
-  }, [actionsJson]);
-  const bridgedRegistry = __spreadValues(__spreadValues({}, (_b = options.actionRegistry) != null ? _b : {}), Object.fromEntries(
-    Object.entries(actionRunners).map(([name, { dispatch }]) => [
-      name,
-      (_s, _ss, _p, ...args) => dispatch(...args)
-    ])
-  ));
-  const analyzedTemplate = template;
-  const ctx = {
-    state: storeState,
-    setState: storeState.setState,
-    props: componentProps,
-    options: __spreadProps(__spreadValues({}, options), {
-      actionRegistry: bridgedRegistry,
-      // Clear serverActions so resolveHandler routes through actionRegistry
-      // (which contains our useTransition-wrapped dispatchers) instead of
-      // calling the raw server action directly.
-      serverActions: {}
-    })
-  };
-  return /* @__PURE__ */ jsxRuntime.jsx(ErrorBoundary, { children: renderNode(analyzedTemplate, ctx) });
-}
-
-// src/lib/next-json-component/static-analyzer.ts
-var EXPR_RE = /\{\{[\s\S]+?\}\}/;
-function hasExpression(value) {
-  return EXPR_RE.test(value);
-}
-function isPropDynamic(value) {
-  if (typeof value === "string") {
-    return hasExpression(value);
-  }
-  if (typeof value === "object" && value !== null) {
-    if ("action" in value && typeof value.action === "string") {
-      return true;
-    }
-  }
-  return false;
-}
-function hasAnyDynamicProp(props) {
-  if (!props) return false;
-  return Object.values(props).some(isPropDynamic);
-}
-function isChildDynamic(child) {
-  if (typeof child === "string") {
-    return hasExpression(child);
-  }
-  return false;
-}
-function analyzeNode(node) {
-  var _a, _b, _c, _d;
-  if (node.$if !== void 0 || node.$each !== void 0) {
-    const analyzedChildren2 = (_b = (_a = node.children) == null ? void 0 : _a.map(analyzeChild)) != null ? _b : [];
-    return __spreadProps(__spreadValues({}, node), {
-      children: analyzedChildren2,
-      isStatic: false
-    });
-  }
-  const dynamicProps = hasAnyDynamicProp(node.props);
-  const analyzedChildren = (_d = (_c = node.children) == null ? void 0 : _c.map(analyzeChild)) != null ? _d : [];
-  const dynamicTextChild = analyzedChildren.some(
-    (child) => typeof child === "string" && isChildDynamic(child)
-  );
-  const dynamicSubNode = analyzedChildren.some(
-    (child) => typeof child !== "string" && !child.isStatic
-  );
-  const isStatic = !dynamicProps && !dynamicTextChild && !dynamicSubNode;
-  return __spreadProps(__spreadValues({}, node), {
-    children: analyzedChildren,
-    isStatic
-  });
-}
-function analyzeChild(child) {
-  if (typeof child === "string") {
-    return child;
-  }
-  return analyzeNode(child);
-}
-function analyzeTree(root) {
-  return analyzeNode(root);
-}
-async function NextJsonComponent(_a) {
-  var _b = _a, {
-    template,
-    options = {}
-  } = _b, rest = __objRest(_b, [
-    "template",
-    "options"
-  ]);
-  if (!template || typeof template !== "object") {
-    console.error("[NextJsonComponent] Invalid template: must be a non-null object.");
-    return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "njc-error", children: "NextJsonComponent: Invalid template." });
-  }
-  const analyzedTemplate = analyzeTree(template);
-  const componentProps = rest;
-  const clientOptions = {
-    initialState: options.initialState,
-    components: options.components,
-    actionRegistry: options.actionRegistry,
-    serverActions: options.serverActions
-  };
-  return /* @__PURE__ */ jsxRuntime.jsx(
-    ServerActionHydrator,
-    {
-      template: analyzedTemplate,
-      options: clientOptions,
-      componentProps
-    }
-  );
-}
-function templateTag(templateId) {
-  return `njc-template:${templateId}`;
-}
-var ALL_TEMPLATES_TAG = "njc-templates";
-function createTemplateFetcher(fetcher, options = {}) {
-  var _a, _b, _c;
-  const revalidate = (_a = options.revalidate) != null ? _a : 60;
-  const getTags = (_b = options.getTags) != null ? _b : ((id) => [templateTag(id), ALL_TEMPLATES_TAG]);
-  const getCacheKey = (_c = options.getCacheKey) != null ? _c : ((id) => ["njc-template", id]);
-  return async (templateId, context) => {
-    const cachedFn = cache.unstable_cache(
-      async () => {
-        const ast = await fetcher(templateId, context);
-        if (!ast || typeof ast !== "object" || !("type" in ast)) {
-          throw new Error(
-            `[NextJsonComponent] template-fetcher: The fetcher returned an invalid JsonASTNode for template "${templateId}". Missing "type" field.`
-          );
-        }
-        return ast;
+React__default.default.memo(StaticSubtree);
+var ReactJsonRenderer = React__default.default.memo(
+  ({ template, options, componentProps = {} }) => {
+    const useStore = React.useMemo(
+      () => {
+        var _a;
+        return createScopedStore((_a = options.initialState) != null ? _a : {});
       },
-      getCacheKey(templateId),
-      {
-        revalidate,
-        tags: getTags(templateId)
-      }
+      []
     );
-    return cachedFn();
-  };
-}
-var getTemplate = createTemplateFetcher(async (templateId) => {
-  const cmsApiUrl = process.env.CMS_API_URL;
-  if (!cmsApiUrl) {
-    throw new Error(
-      "[NextJsonComponent] default getTemplate(): CMS_API_URL is not set. Set it in your environment or build your own fetcher using createTemplateFetcher()."
+    const state = useStore();
+    const analyzedTemplate = React.useMemo(
+      () => analyzeTree(template),
+      [template]
     );
+    const ctx = React.useMemo(
+      () => ({
+        state,
+        setState: state.setState,
+        props: componentProps,
+        options
+      }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [state, componentProps, options]
+    );
+    const rendered = renderNode(analyzedTemplate, ctx);
+    return /* @__PURE__ */ jsxRuntime.jsx(ErrorBoundary, { children: rendered });
   }
-  const url = `${cmsApiUrl.replace(/\/$/, "")}/templates/${templateId}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(
-      `[NextJsonComponent] default getTemplate(): Failed to load template "${templateId}". HTTP ${res.status} from ${url}`
-    );
-  }
-  return res.json();
-});
+);
+ReactJsonRenderer.displayName = "ReactJsonRenderer";
 
-exports.ALL_TEMPLATES_TAG = ALL_TEMPLATES_TAG;
-exports.NextJsonComponent = NextJsonComponent;
-exports.createTemplateFetcher = createTemplateFetcher;
-exports.getTemplate = getTemplate;
-exports.templateTag = templateTag;
-//# sourceMappingURL=server.js.map
-//# sourceMappingURL=server.js.map
+exports.ReactJsonRenderer = ReactJsonRenderer;
+exports.SafeEvalError = SafeEvalError;
+exports.UnregisteredActionError = UnregisteredActionError;
+exports.analyzeNode = analyzeNode;
+exports.analyzeTree = analyzeTree;
+exports.createBoundHandler = createBoundHandler;
+exports.isExpression = isExpression;
+exports.isStaticNode = isStaticNode;
+exports.resolveExpression = resolveExpression;
+exports.safeEval = safeEval;
+exports.validateRegistry = validateRegistry;
+//# sourceMappingURL=react.js.map
+//# sourceMappingURL=react.js.map

@@ -1,8 +1,9 @@
+import { ServerActionHydrator } from './chunk-IU7JQMRT.mjs';
 import { analyzeTree } from './chunk-YKATBEDX.mjs';
-import { ServerActionHydrator } from './chunk-NA7L6NTL.mjs';
+import './chunk-ZFUZUVYD.mjs';
 import { __objRest } from './chunk-3P2SZ7UA.mjs';
 import { jsx } from 'react/jsx-runtime';
-import { cacheTag, cacheLife } from 'next/cache';
+import { unstable_cache } from 'next/cache';
 
 async function NextJsonComponent(_a) {
   var _b = _a, {
@@ -41,21 +42,25 @@ function createTemplateFetcher(fetcher, options = {}) {
   var _a, _b, _c;
   const revalidate = (_a = options.revalidate) != null ? _a : 60;
   const getTags = (_b = options.getTags) != null ? _b : ((id) => [templateTag(id), ALL_TEMPLATES_TAG]);
-  (_c = options.getCacheKey) != null ? _c : ((id) => ["njc-template", id]);
+  const getCacheKey = (_c = options.getCacheKey) != null ? _c : ((id) => ["njc-template", id]);
   return async (templateId, context) => {
-    "use cache";
-    const tags = getTags(templateId);
-    cacheTag(...tags);
-    if (revalidate !== false && typeof revalidate === "number") {
-      cacheLife({ revalidate });
-    }
-    const ast = await fetcher(templateId, context);
-    if (!ast || typeof ast !== "object" || !("type" in ast)) {
-      throw new Error(
-        `[NextJsonComponent] template-fetcher: The fetcher returned an invalid JsonASTNode for template "${templateId}". Missing "type" field.`
-      );
-    }
-    return ast;
+    const cachedFn = unstable_cache(
+      async () => {
+        const ast = await fetcher(templateId, context);
+        if (!ast || typeof ast !== "object" || !("type" in ast)) {
+          throw new Error(
+            `[NextJsonComponent] template-fetcher: The fetcher returned an invalid JsonASTNode for template "${templateId}". Missing "type" field.`
+          );
+        }
+        return ast;
+      },
+      getCacheKey(templateId),
+      {
+        revalidate,
+        tags: getTags(templateId)
+      }
+    );
+    return cachedFn();
   };
 }
 var getTemplate = createTemplateFetcher(async (templateId) => {

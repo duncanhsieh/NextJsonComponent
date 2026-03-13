@@ -36,6 +36,12 @@ export function renderNode(
   ctx: RenderContext,
   key?: string,
 ): React.ReactNode {
+  // --- $slot: output the React children passed in from the consumer ---
+  if (node.type === '$slot') {
+    const slotChildren = ctx.props?.children as React.ReactNode | undefined;
+    return slotChildren ?? null;
+  }
+
   // --- $if directive ---
   if (node.$if !== undefined) {
     const visible = resolveExpression(node.$if, ctx);

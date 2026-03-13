@@ -7,6 +7,7 @@ import { DemoCounter } from './DemoCounter';
 import { DemoTodoList } from './DemoTodoList';
 import { DemoConverter } from './DemoConverter';
 import { DemoHeadlessUI } from './DemoHeadlessUI';
+import { DemoNest } from './DemoNest';
 import { NextJsonComponent } from '@/lib/next-json-component/server';
 import { analyzeTree } from '@/lib/next-json-component';
 import { submitDemoAction } from './actions';
@@ -204,6 +205,12 @@ export default function DemoPage() {
               icon: '🧩',
               label: 'Headless UI',
               content: <DemoHeadlessUI template={analyzedHeadlessUI} />,
+            },
+            {
+              id: 'nest',
+              icon: '🏗️',
+              label: 'CMS 組件組合',
+              content: <DemoNest />,
             },
           ]}
         />

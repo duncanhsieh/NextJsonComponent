@@ -1,5 +1,5 @@
 import React from 'react';
-import { b as AnalyzedNode, N as NextJsonComponentOptions } from './types-B1lk251m.js';
+import { A as AnalyzedNode, N as NextJsonComponentOptions } from './types-C1ZzHgkh.js';
 import * as react_jsx_runtime from 'react/jsx-runtime';
 
 /**

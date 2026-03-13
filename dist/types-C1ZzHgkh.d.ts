@@ -98,4 +98,4 @@ interface RenderContext {
     loopVars?: Record<string, unknown>;
 }
 
-export type { ActionBinding as A, JsonPropValue as J, NextJsonComponentOptions as N, RenderContext as R, ScopedStoreState as S, JsonASTNode as a, AnalyzedNode as b, ActionRegistry as c, RegistryAction as d, SetStateFn as e };
+export type { AnalyzedNode as A, JsonASTNode as J, NextJsonComponentOptions as N, RenderContext as R, ScopedStoreState as S, ActionBinding as a, ActionRegistry as b, JsonPropValue as c, RegistryAction as d, SetStateFn as e };

@@ -40,3 +40,9 @@ export { jsxToJson } from './converters/jsx-to-json';
 export { jsonToJsx } from './converters/json-to-jsx';
 export type { JsxToJsonOptions } from './converters/jsx-to-json';
 export type { JsonToJsxOptions } from './converters/json-to-jsx';
+
+// Component factories
+export { PureJsonComponent } from './react/PureJsonComponent';
+export type { PureJsonComponentOptions } from './react/PureJsonComponent';
+export { createJsonComponent } from './react/createJsonComponent';
+export type { CreateJsonComponentOptions } from './react/createJsonComponent';

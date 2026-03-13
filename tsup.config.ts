@@ -5,6 +5,7 @@ export default defineConfig({
     index: 'src/lib/next-json-component/index.ts',
     'server': 'src/lib/next-json-component/server/index.ts',
     'client': 'src/lib/next-json-component/client/index.ts',
+    'react': 'src/lib/next-json-component/react/index.ts',
   },
   format: ['cjs', 'esm'], // 支持 CommonJS 和 ES Modules
   dts: true,              // 自動生成 .d.ts 類型定義檔
